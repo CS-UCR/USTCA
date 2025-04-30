@@ -27,3 +27,6 @@ ELEMENT     4 characters. The three types of elements we are using are as follow
 
 VALUE       Integer. The recorded value of the element on this particular day.
 
+## How to run the code:
+System requirements: (list)
+spark-submit
