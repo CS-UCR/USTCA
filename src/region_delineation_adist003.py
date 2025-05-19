@@ -35,23 +35,24 @@ stations_df = stations_df.withColumnRenamed('ID', 'station_id')
 def classify_region(lat, lon):
     lon = float(lon)
     lat = float(lat)
-    
+
     if lat > 40 and lon < -120:
         return 'NW'
     elif lat > 30 and -120 <= lon < -100:
         return 'W'
-    elif lat < 40 and -120 <= lon < -100:
+    elif lat <= 40 and -120 <= lon < -100:
         return 'SW'
-    elif lat > 40 and -100 <= lon < -85:
+    elif lat >= 37 and lon >= -100 and lon < -85:
         return 'MW'
-    elif lat < 40 and -85 <= lon < -70:
+    elif lat < 37 and lon >= -100 and lon < -75:
         return 'SE'
     elif 36 <= lat <= 42 and -80 <= lon < -70:
         return 'MA'
-    elif lat > 40 and lon > -75:
+    elif lat > 40 and lon >= -75:
         return 'NE'
     else:
         return 'Unknown'
+
 
 classify_region_udf = F.udf(classify_region, StringType())
 
