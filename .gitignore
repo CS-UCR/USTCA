@@ -1,0 +1,18 @@
+# Raw data directory #
+######################
+ghcn/ghcn_hcn/
+*.dly
+
+# Temp folder #
+###############
+temp/
+
+# Other #
+#########
+*.csv
+*.csv/
+*.exe
+*.dll
+*.zip
+*.tar
+*.gz
