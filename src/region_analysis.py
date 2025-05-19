@@ -7,10 +7,10 @@ from pyspark.sql.types import StringType
 import os
 spark = SparkSession.builder.appName("Region Analysis").getOrCreate()
 
-
+curr_wcd = os.getcwd()
 # Read input file
 #file_path = "ghcnd_hcn" # uncomment for final bit
-file_path = "/home/cs179g/ustca/ghcn/observations.csv"
+file_path = "/home/cs179g/observations/*.csv"
 # file_path = "ghcnd_hcn/USC00011084.dly"
 
 # df = spark.read.csv(file_path, header=False, inferSchema=True)
@@ -18,8 +18,10 @@ main_df = spark.read.format("csv").option("header","true").load(file_path)
 #     "id","year","month","element",
 # 
 
-stations_path = 'stations.csv'
+stations_path = '/home/cs179g/USTCA/stations.csv'
 stations_df = spark.read.format('csv').option('header','true').load(stations_path)
+
+stations_df = stations_df.withColumnRenamed('ID', 'station_id') 
 #print(df.count())
 
 # NW = North West
@@ -31,6 +33,9 @@ stations_df = spark.read.format('csv').option('header','true').load(stations_pat
 # NE = North East
 
 def classify_region(lat, lon):
+    lon = float(lon)
+    lat = float(lat)
+    
     if lat > 40 and lon < -120:
         return 'NW'
     elif lat > 30 and -120 <= lon < -100:
@@ -48,13 +53,15 @@ def classify_region(lat, lon):
     else:
         return 'Unknown'
 
-classify_region_udf = udf(classify_region, StringType())
+classify_region_udf = F.udf(classify_region, StringType())
 
-joined_df = main_df.join(stations_df, main_df['id'] == stations_df['ID'], 'left')
+joined_df = main_df.join(stations_df, main_df['id'] == stations_df['station_id'], 'left')
 
-joined_df = joined_df.withColumn('region', classify_region_udf(stations_df['LATITUDE'], stations_df['LONGITUDE']))     
+joined_df = joined_df.withColumn('region', classify_region_udf(joined_df['LATITUDE'], joined_df['LONGITUDE']))     
 
-joined_df
+joined_df.show()
+
+joined_df.write.csv('region_observations', header=True, mode='overwrite')
 
 # Stop the spark job
 spark.stop()
