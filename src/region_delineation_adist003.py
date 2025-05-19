@@ -5,7 +5,7 @@ from pyspark.sql import Row
 from pyspark.sql import udf
 from pyspark.sql.types import StringType
 import os
-spark = SparkSession.builder.appName("Region Analysis").getOrCreate()
+spark = SparkSession.builder.appName("Region Delineation").getOrCreate()
 
 curr_wcd = os.getcwd()
 # Read input file
