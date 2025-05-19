@@ -1,4 +1,3 @@
-### WORK IN PROGRESS, DOES NOT WORK ON FULL DATASET YET. WORKS ON ONE FILE AT A TIME.
 
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
