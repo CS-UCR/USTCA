@@ -9,9 +9,11 @@ import os
 from pyspark.sql.window import Window
 
 spark = SparkSession.builder.appName("Region Analysis").getOrCreate()
+# for local: 
+# for main machine: /home/cs179g/USTCA/data/region_observations
+df = spark.read.option('header','true').option('inferSchema','true').csv('data/region_observations')
 
-df = spark.read.option('header','true').option('inferSchema','true').csv('/home/cs179g/USTCA/data/region_observations')
-
+# 1 Is there a signficant diff between the average temp increase overtime per region?
 temp_df = df.filter(df['element']  == 'TMAX')
 temp_df = temp_df.withColumn('date', to_date(temp_df['date'], 'yy-MM-dd'))
 temp_df = temp_df.withColumn('year', year(temp_df['date']))
@@ -34,18 +36,19 @@ change_df.show()
 
 #do an anova
 
-#2 
+#2 What is the overall trend in temperature? and what is the trend in temperature per region?
 
 
-# 3 Define exterme weathe rthrehsolds
-do a group by to count tgem
+# 3  Which Region has had the most extreme weather increases overtime
+# Define extreme weather conditions
+# do a group by to count tgem
 
 # 3
-| Tool                          | Good For                  |
-| ----------------------------- | ------------------------- |
-| `pandas + matplotlib/seaborn` | Quick trend plotting      |
-| `statsmodels`                 | Time series decomposition |
-| `scikit-learn`                | Linear trend detection    |
-| `PySpark`                     | Scalable trend summaries  |
-| `Prophet`, `ARIMA`, `LSTM`    | Forecasting temperature   |
+# | Tool                          | Good For                  |
+# | ----------------------------- | ------------------------- |
+# | `pandas + matplotlib/seaborn` | Quick trend plotting      |
+# | `statsmodels`                 | Time series decomposition |
+# | `scikit-learn`                | Linear trend detection    |
+# | `PySpark`                     | Scalable trend summaries  |
+# | `Prophet`, `ARIMA`, `LSTM`    | Forecasting temperature   |
 
