@@ -10,7 +10,7 @@ from pyspark.sql.window import Window
 
 spark = SparkSession.builder.appName("Region Analysis").getOrCreate()
 
-df = spark.read.option('header','true').option('inferSchema','true').csv('/home/cs179g/USTCA/data/region_observations/part-00067-2db47eea-2cb6-4d7b-85c8-67cec79039a9-c000.csv')
+df = spark.read.option('header','true').option('inferSchema','true').csv('/home/cs179g/USTCA/data/observations')
 
 temp_df = df.filter(df['element']  == 'TMAX')
 temp_df = temp_df.withColumn('date', to_date(temp_df['date'], 'yy-MM-dd'))
