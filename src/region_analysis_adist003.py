@@ -9,4 +9,6 @@ spark = SparkSession.builder.appName("Region Analysis").getOrCreate()
 
 df = spark.read.option('header','true').option('inferSchema','true').csv('/home/cs179g/USTCA/region_observations/*.csv')
 
-print(len(df.filter(df['region'] == 'Unknown')))
+print(df.filter(df['region'] == 'Unknown').count())
+
+#df = df.withColumn()
