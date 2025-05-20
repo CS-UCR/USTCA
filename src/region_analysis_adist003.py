@@ -19,7 +19,7 @@ df = spark.read.option('header','true').option('inferSchema','true').csv('data/r
 
 # 1 Is there a signficant diff between the average temp increase overtime per region?
 # show that the regiosn differ in average temperature 
-temp_df = df.filter(df['element']  == 'TMAX' or df['element'] == 'TMIN')
+temp_df = df.filter(df['element']  == 'TMAX' | df['element'] == 'TMIN')
 temp_df = temp_df.withColumn('date', to_date(temp_df['date'], 'yy-MM-dd'))
 temp_df = temp_df.withColumn('year', year(temp_df['date']))
 
