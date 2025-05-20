@@ -12,3 +12,5 @@ df = spark.read.option('header','true').option('inferSchema','true').csv('/home/
 print(df.filter(df['region'] == 'Unknown').count())
 
 #df = df.withColumn()
+
+region_df = df.filter(df['value']  == 'TMAX')
