@@ -15,11 +15,11 @@ import pandas as pd
 spark = SparkSession.builder.appName("Region Analysis").getOrCreate()
 # for local: data/region_observations_sample
 # for main machine: /home/cs179g/USTCA/data/region_observations_sample
-df = spark.read.option('header','true').option('inferSchema','true').csv('data/region_observations_sample')
+df = spark.read.option('header','true').option('inferSchema','true').csv('/home/cs179g/USTCA/data/region_observations')
 
 # 1 Is there a signficant diff between the average temp increase overtime per region?
 # show that the regiosn differ in average temperature 
-temp_df = df.filter(df['element']  == 'TMAX' | df['element'] == 'TMIN')
+temp_df = df
 temp_df = temp_df.withColumn('date', to_date(temp_df['date'], 'yy-MM-dd'))
 temp_df = temp_df.withColumn('year', year(temp_df['date']))
 
@@ -52,11 +52,11 @@ tmax_region_df = tmax_region_df.fillna({'rate_of_change': 0})
 # change_df.show()
 
 #do an anova
-anovaMax = smf.ols('rate_of_change ~ region', data=tmax_region_df).fit()
+anovaMax = smf.ols('rate_of_change ~ region', data=tmax_region_df.toPandas()).fit()
 print("ANOVA TMAX:")
 print(anovaMax.summary())
 
-anovaMin = smf.ols('rate_of_change ~ region', data=tmin_region_df).fit()
+anovaMin = smf.ols('rate_of_change ~ region', data=tmin_region_df.toPandas()).fit()
 print("ANOVA TMIN:")
 print(anovaMin.summary())
 #2 What is the overall trend in temperature? and what is the trend in temperature per region?
