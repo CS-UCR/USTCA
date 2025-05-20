@@ -25,5 +25,9 @@ region_df = region_df.withColumn('rate_of_change', (F.col('avg_tmax') - F.col('p
 region_df = region_df.fillna({'prev_avg_tmax': 0})
 region_df = region_df.fillna({'rate_of_change': 0})
 
+#i probabaly want to graph region_df
+# like graph by region (probably use a line graph to show all regiosn together)
 
-region_df.show()
+change_df = region_df.groupBy('region').agg(F.avg('rate_of_change').alias('average_roc'))
+
+change_df.show()
