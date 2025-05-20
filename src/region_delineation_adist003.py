@@ -33,15 +33,13 @@ stations_df = stations_df.withColumnRenamed('ID', 'station_id')
 # NE = North East
 
 def classify_region(lat, lon):
-    if not (24.5 <= lat <= 49.5 and -125 <= lon <= -66.5):
-        return 'Unknown'
-    if lat >= 37 and lon >= -80:
+    if 37 <= lat <= 45 and -80 <= lon <= -68:  # Northeast
         return 'Northeast'
-    elif 36 <= lat <= 49 and -104 <= lon < -80:
+    if 36 <= lat < 50 and -95 <= lon < -80:  # Midwest
         return 'Midwest'
-    elif lat < 37 and lon >= -100:
+    if 25 <= lat < 36 and -100 <= lon < -80:  # South
         return 'South'
-    elif lon < -100:
+    if 32 <= lat < 50 and -125 <= lon < -100:  # West
         return 'West'
     return 'Unknown'
 

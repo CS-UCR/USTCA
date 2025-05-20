@@ -16,7 +16,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import scipy.stats as stats
 
-directory = 'region_analysis'
+directory = 'data/region_analysis'
 if not os.path.exists(directory):
     os.makedirs(directory)
 
@@ -114,6 +114,7 @@ print(anovaMax_summary)
 print("\nANOVA TMIN Results Saved to CSV:")
 print(anovaMin_summary)
 
+print(temp_df.col('region').distinct().count())
 #2 What is the overall trend in temperature? and what is the trend in temperature per region?
 
 
