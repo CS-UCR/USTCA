@@ -10,7 +10,7 @@ spark = SparkSession.builder.appName("Region Delineation").getOrCreate()
 curr_wcd = os.getcwd()
 # Read input file
 #file_path = "ghcnd_hcn" # uncomment for final bit
-file_path = "/home/cs179g/observations/*.csv"
+file_path = "/home/cs179g/USTCA/data/observations/*.csv"
 # file_path = "ghcnd_hcn/USC00011084.dly"
 
 # df = spark.read.csv(file_path, header=False, inferSchema=True)
@@ -18,7 +18,7 @@ main_df = spark.read.format("csv").option("header","true").load(file_path)
 #     "id","year","month","element",
 # 
 
-stations_path = '/home/cs179g/USTCA/stations.csv'
+stations_path = '/home/cs179g/USTCA/data/stations.csv'
 stations_df = spark.read.format('csv').option('header','true').load(stations_path)
 
 stations_df = stations_df.withColumnRenamed('ID', 'station_id') 
@@ -33,6 +33,8 @@ stations_df = stations_df.withColumnRenamed('ID', 'station_id')
 # NE = North East
 
 def classify_region(lat, lon):
+    lat = float(lat)
+    lon = float(lon)
     if 37 <= lat <= 45 and -80 <= lon <= -68:  # Northeast
         return 'Northeast'
     if 36 <= lat < 50 and -95 <= lon < -80:  # Midwest
