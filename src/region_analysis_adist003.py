@@ -10,7 +10,7 @@ from pyspark.sql.window import Window
 
 spark = SparkSession.builder.appName("Region Analysis").getOrCreate()
 
-df = spark.read.option('header','true').option('inferSchema','true').csv('/home/cs179g/USTCA/data/observations')
+df = spark.read.option('header','true').option('inferSchema','true').csv('/home/cs179g/USTCA/data/region_observations')
 
 temp_df = df.filter(df['element']  == 'TMAX')
 temp_df = temp_df.withColumn('date', to_date(temp_df['date'], 'yy-MM-dd'))
@@ -31,3 +31,21 @@ region_df = region_df.fillna({'rate_of_change': 0})
 change_df = region_df.groupBy('region').agg(F.avg('rate_of_change').alias('average_roc'))
 
 change_df.show()
+
+#do an anova
+
+#2 
+
+
+# 3 Define exterme weathe rthrehsolds
+do a group by to count tgem
+
+# 3
+| Tool                          | Good For                  |
+| ----------------------------- | ------------------------- |
+| `pandas + matplotlib/seaborn` | Quick trend plotting      |
+| `statsmodels`                 | Time series decomposition |
+| `scikit-learn`                | Linear trend detection    |
+| `PySpark`                     | Scalable trend summaries  |
+| `Prophet`, `ARIMA`, `LSTM`    | Forecasting temperature   |
+
