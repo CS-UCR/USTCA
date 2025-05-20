@@ -9,9 +9,9 @@ import os
 from pyspark.sql.window import Window
 
 spark = SparkSession.builder.appName("Region Analysis").getOrCreate()
-# for local: 
-# for main machine: /home/cs179g/USTCA/data/region_observations
-df = spark.read.option('header','true').option('inferSchema','true').csv('data/region_observations')
+# for local: data/region_observations_sample
+# for main machine: /home/cs179g/USTCA/data/region_observations_sample
+df = spark.read.option('header','true').option('inferSchema','true').csv('data/region_observations_sample')
 
 # 1 Is there a signficant diff between the average temp increase overtime per region?
 temp_df = df.filter(df['element']  == 'TMAX')
