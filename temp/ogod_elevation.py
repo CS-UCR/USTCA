@@ -1,78 +1,80 @@
-import pandas as pd 
-#from sklearn.cluster import KMeans
 from pyspark.sql import SparkSession
-from pyspark.sql import Row
-from pyspark.sql.functions import col
-from pyspark.sql.functions import year, month
-import pyspark.sql.functions as F
-import matplotlib
-import matplotlib.pyplot as plt 
-import seaborn as sns
+from pyspark.sql.functions import col, avg, month, when
+from pyspark.ml.regression import LinearRegression
+from pyspark.ml.feature import VectorAssembler
+from pyspark.sql.types import StructType, StructField, StringType, DoubleType
+import statsmodels.formula.api as smf
+import pandas as pd
+
+## GETTING DATA 
+spark = SparkSession.builder.appName("ElevationAnalysis").getOrCreate()
+
+rawObservationsDF = spark.read.csv("/home/cs179g/ustca(not github)/observations.csv/part-00000-0d699abc-208f-46d6-8620-59f4fd32a71a-c000.csv", header=True, inferSchema=True)
+onlyTemp = rawObservationsDF.select('id', 'year', 'month', 'element', 'value').filter((rawObservationsDF['element'] == 'TMAX') | (rawObservationsDF['element'] == 'TMIN'))
+observationsDF = onlyTemp.na.drop()
+# print(onlyTemp.show(1))
+
+rawStationsDF = spark.read.csv("/home/cs179g/USTCA/stations.csv", header=True, inferSchema=True)
+onlyElevation = rawStationsDF.select('ID', 'ELEVATION', 'NAME')
+stationsDF = onlyElevation.na.drop()
+# print(stationsDF.show(10))
 
 
-# ## NOT SURE HOW EXACTLY HOW TO ACCESS SQL DB 
-# sqlDB = pulling sql db 
-# sql_query = """
-#  SELECT S.id, S.elevation, O.date, O.element, O.data
-#  FROM station S, observation O
-#  WHERE S.id = O.id
-#  """
-# elevation_df = spark.sql(sql_query, sqlDB)
-
-# # splitting elevation_df so one is for TMAX and other for TMIN 
-# elevation_tmax_df = elevation_df[elevation_df["element"] == "TMAX"]
-# elevation_tmin_df = elevation_df[elevation_df["element"] == "TMIN"]
-
-###########################################################################################
-spark = SparkSession.builder.appName("Elevation Analysis").getOrCreate()
-
-rawStationsDF = spark.read.csv("/home/cs179g/ustca/stations.csv", header=True, inferSchema=True)
-stationsDF = rawStationsDF.select('ID', 'ELEVATION')
 stationsDF = stationsDF.withColumnRenamed('ID', 'id')
+finalDF = observationsDF.join(stationsDF, on='id')
 
-rawObservationsDF = spark.read.csv("/home/cs179g/ustca/src/observations.csv/part-00057-a54fb259-091e-4d8f-8cd7-1cff962c4753-c000.csv", header=True, inferSchema=True)
-observationsDF = rawObservationsDF.select('id', 'date', 'element', 'value') \
-                                .filter(col('element').isin(['TMAX', 'TMIN']))
-observationsDF = observationsDF.withColumn('year', year(observationsDF['date']))
-observationsDF = observationsDF.withColumn('month', month(observationsDF['date']))
-observationsDF = observationsDF.drop('date')
+# finalDF.select('value').summary().show()
 
-elevation_df = observationsDF.join(stationsDF, on='id')
+finalDF = finalDF.withColumn(
+    "elev_bin", 
+    when (col('value') <= 0, "below")
+    .when((col('value') > 0) & (col('value') <= 150), "low")
+    .when((col('value') > 150) & (col('value') <= 300), "mid")
+    .otherwise("high")
+)
 
-elevation_values = elevation_df.select('ELEVATION').toPandas()
-print(elevation_values.describe())
+# finalDF.groupBy("elev_bin").count().orderBy("elev_bin").show()
 
-# file_path = "ustca/src/observations.csv/part-00057-a54fb259-091e-4d8f-8cd7-1cff962c4753-c000.csv" #testing with one csv file
-# #file_path = "ustca/src/observations.csv/*.csv"
-# df = spark.read.csv(file_path, header=True, inferSchema=True)
+finalTMax = finalDF.filter(finalDF['element'] == "TMAX")
+# finalTMax.show(1)
+finalTMin = finalDF.filter(finalDF['element'] == "TMIN")
 
-# df_with_month = df.selectExpr(
-#     "id",  # retain existing columns
-#     "element",
-#     "value",
-#     "date",
-#     "MONTH(date) AS month",  # extract month from 'date'
-#     "YEAR(date) AS year" #extract year from date
-######################################
+avgTMaxByElevYear = finalTMax.groupBy("elev_bin", "year").agg(
+    avg("value").alias("avg_temp")
+)
+# avgTMaxByElevYear.show()
+avgTMinByElevYear = finalTMin.groupBy("elev_bin", "year").agg(
+    avg("value").alias("avg_temp")
+)
 
-# n = number of groups EDIT
+#######################
+assembler = VectorAssembler(inputCols=['year'], outputCol='features')
+avgTMaxFeatures = assembler.transform(avgTMaxByElevYear)
 
-# ## CHOOSE ONE SORTING TYPE BASED ON DATA SPREAD 
-# # sorting out elevation in even percentile groups
-# elevation_tmax_df['elevation_group'] = pd.qcut(elevation_tmax_df['elevation'], q=n, labels=['Low', 'Medium', 'High']) EDIT 
+bins = avgTMaxFeatures.select("elev_bin").distinct().rdd.flatMap(lambda x:x).collect()
 
-# # using kmeans to bin elevation 
-# means = KMeans(n_clusters=n)
-# elevation_tmax_df['elevation_group'] = kmeans.fit_predict(elevation_tmax_df[['elevation']])
+results =[]
 
-# ## MAKE SURE TO COPY AGAIN FOR TMIN 
-#######################################
+for bin in bins: 
+    binDF = avgTMaxFeatures.filter(avgTMaxFeatures['elev_bin'] == bin)
 
-# ## GETTING YEARLY AVERAGE FOR EACH ELEVATION GROUP 
-# yearlyAvgTMAX = elevation_tmax_df.groupby(['elevation_group', 'year'])['data'].mean().reset_index()
+    lm = LinearRegression(featuresCol='features', labelCol="avg_temp")
+    lm_fitted = lm.fit(binDF)
 
-# # Preview the grouped data
-# print(yearlyAvgTMAX.head())
+    slope = lm_fitted.coefficients[0]
+    intercept = lm_fitted.intercept
+    r2 = lm_fitted.summary.r2
+    p_value = lm_fitted.summary.pValues[1] if lm_fitted.summary.pValues else None
 
-# ## MAKE SURE TO COPY AGAIN FOR TMIN
-########################################
+    results.append((bin, float(slope), float(intercept), float(r2), float(p_value) if p_value is not None else None))
+
+schema = StructType([
+    StructField("elevation_bin", StringType(), True),
+    StructField("slope_per_year", DoubleType(), True),
+    StructField("intercept", DoubleType(), True),
+    StructField("r_squared", DoubleType(), True),
+    StructField("p_value", DoubleType(), True)
+])
+
+resultsDF = spark.createDataFrame(results, schema=schema)
+resultsDF.orderBy("slope_per_year", ascending=False).show()

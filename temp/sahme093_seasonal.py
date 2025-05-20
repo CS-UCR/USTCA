@@ -4,20 +4,20 @@ from pyspark.sql.functions import col, avg, month
 spark = SparkSession.builder.appName("SeasonalAnalysis").getOrCreate()
 
 
-file_path = "ustca/src/observations.csv/part-00057-a54fb259-091e-4d8f-8cd7-1cff962c4753-c000.csv" #testing with one csv file
-#file_path = "ustca/src/observations.csv/*.csv"
+#file_path = "ustca/src/observations.csv/part-00057-a54fb259-091e-4d8f-8cd7-1cff962c4753-c000.csv" #testing with one csv file
+file_path = "ustca/src/observations.csv/*.csv"
 df = spark.read.csv(file_path, header=True, inferSchema=True)
 
 df_with_month = df.selectExpr(
-    "id",  # retain existing columns
+    "id", 
     "element",
     "value",
     "date",
-    "MONTH(date) AS month",  # extract month from 'date'
+    "MONTH(date) AS month",  # extract month from date
     "YEAR(date) AS year" #extract year from date
 
 )
-#1: Add a "quarter" column
+#Add a "quarter" column
 df_with_quarter = df_with_month.selectExpr(
     "*", 
     """
@@ -30,21 +30,20 @@ df_with_quarter = df_with_month.selectExpr(
     """
 )
 
-
-#2: Filter by element (TMAX, TMIN, PRCP)
+#Filter by element (TMAX, TMIN, PRCP)
 filtered = df_with_quarter.filter("element = 'TMAX' OR element = 'TMIN' OR element = 'PRCP'")
 
-#3: Group by year, quarter, and element
+#Group by year, quarter, and element
 quarterly_avg = filtered.groupBy("year", "quarter", "element").agg(
     avg("value").alias("average_value")
 )
 
-#4: convert from tenths
 quarterly_avg = quarterly_avg.withColumn("average_value", col("average_value") / 10)
 
-#quarterly_avg.orderBy("year", "quarter", "element").show(50) #Print a single table with all elements 
+#Print results
+#quarterly_avg.orderBy("year", "quarter", "element").show(50) #Single table with all elements 
 
-#OR Create a separate table for each element
+#Separate table for each element
 tmax_table = quarterly_avg.filter("element = 'TMAX'").drop("element")
 tmin_table = quarterly_avg.filter("element = 'TMIN'").drop("element")
 prcp_table = quarterly_avg.filter("element = 'PRCP'").drop("element")
@@ -56,5 +55,17 @@ tmin_table.orderBy("year", "quarter").show()
 print("Average PRCP")
 prcp_table.orderBy("year", "quarter").show()
 
+#MYSQL??
+#mysql_url = "jdbc:mysql://localhost:3306/your_db_name"
+#mysql_properties = {
+# "user": "your_username",
+# "password": "your_password",
+# "driver": "com.mysql.cj.jdbc.Driver"
+#}
 
-
+#quarterly_avg.write.jdbc(
+#   url=mysql_url,
+#   table="quarterly_averages",
+#   mode="overwrite", 
+#   properties=mysql_properties
+#)
