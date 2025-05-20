@@ -1,3 +1,5 @@
+-- create database for storing tables
+CREATE DATABASE IF NOT EXISTS ustca;
 USE ustca;
 
 -- Drop, then create all tables
@@ -39,7 +41,7 @@ CREATE TABLE observation (
 );
 
 -- load station
-LOAD DATA LOCAL INFILE '/home/cs179g/ustca/stations.csv'
+LOAD DATA LOCAL INFILE '/home/cs179g/USTCA/data/stations.csv'
 INTO TABLE station
 FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
@@ -48,7 +50,7 @@ IGNORE 1 LINES
 
 
 -- load observation
-LOAD DATA LOCAL INFILE '/home/cs179g/ustca/observations.csv/part-00000-0d699abc-208f-46d6-8620-59f4fd32a71a-c000.csv'
+LOAD DATA LOCAL INFILE '/home/cs179g/USTCA/data/observations.csv/part-00000-0d699abc-208f-46d6-8620-59f4fd32a71a-c000.csv'
 INTO TABLE observation
 FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
