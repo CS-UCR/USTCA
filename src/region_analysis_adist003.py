@@ -36,6 +36,8 @@ tmax_region_df = temp_df.groupBy('region', 'year').agg(F.avg('value').alias('avg
 
 window_spec = Window.partitionBy('region').orderBy('year')
 
+# 1 Is there a signficant diff between the average temp increase overtime per region?
+# show that the regiosn differ in average temperature 
 tmin_region_df = tmin_region_df.withColumn('prev_avg_tmin', F.lag('avg_tmin').over(window_spec))
 tmin_region_df = tmin_region_df.withColumn('rate_of_change', (F.col('avg_tmin') - F.col('prev_avg_tmin')) / F.col('prev_avg_tmin'))
 
@@ -115,10 +117,34 @@ print("\nANOVA TMIN Results Saved to CSV:")
 print(anovaMin_summary)
 
 print(temp_df.col('region').distinct().count())
+
 #2 What is the overall trend in temperature? and what is the trend in temperature per region?
+tmin_region_pd = tmin_region_df.toPandas()
+tmax_region_pd = tmax_region_df.toPandas()
 
+plt.figure(figsize=(12, 6))
+sns.regplot(data=tmin_region_pd, x='year', y='avg_tmin', scatter_kws={'s': 100}, line_kws={'color': 'red'}, 
+            ci=None, hue='region', palette='Set1', robust=True)
+plt.title('TMIN vs Year by Region with Linear Regression Line')
+plt.xlabel('Year')
+plt.ylabel('Average TMIN')
+plt.legend(title='Region')
+plt.tight_layout()
+plt.savefig(os.path.join(directory, 'scatterplot_tmin_region.png'))
+plt.close()
 
-# 3  Which Region has had the most extreme weather increases overtime
+plt.figure(figsize=(12, 6))
+sns.regplot(data=tmax_region_pd, x='year', y='avg_tmax', scatter_kws={'s': 100}, line_kws={'color': 'blue'}, 
+            ci=None, hue='region', palette='Set2', robust=True)
+plt.title('TMAX vs Year by Region with Linear Regression Line')
+plt.xlabel('Year')
+plt.ylabel('Average TMAX')
+plt.legend(title='Region')
+plt.tight_layout()
+plt.savefig(os.path.join(directory, 'scatterplot_tmax_region.png'))
+plt.close()
+
+# 3  Which Region has had the most extreme weather invents increases overtime
 # Define extreme weather conditions
 # do a group by to count tgem
 
@@ -131,5 +157,7 @@ print(temp_df.col('region').distinct().count())
 # | `PySpark`                     | Scalable trend summaries  |
 # | `Prophet`, `ARIMA`, `LSTM`    | Forecasting temperature   |
 
+
 #4. Try each tasks using different s# spark workers
 
+# Get sources for all info
