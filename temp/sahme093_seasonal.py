@@ -1,11 +1,13 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, avg, month
+import pandas
+import mysql.connector
 
 spark = SparkSession.builder.appName("SeasonalAnalysis").getOrCreate()
 
 
 #file_path = "ustca/src/observations.csv/part-00057-a54fb259-091e-4d8f-8cd7-1cff962c4753-c000.csv" #testing with one csv file
-file_path = "ustca/src/observations.csv/*.csv"
+file_path = "USTCA/data/observations/*.csv"
 df = spark.read.csv(file_path, header=True, inferSchema=True)
 
 df_with_month = df.selectExpr(
@@ -55,17 +57,42 @@ tmin_table.orderBy("year", "quarter").show()
 print("Average PRCP")
 prcp_table.orderBy("year", "quarter").show()
 
-#MYSQL??
-#mysql_url = "jdbc:mysql://localhost:3306/your_db_name"
-#mysql_properties = {
-# "user": "your_username",
-# "password": "your_password",
-# "driver": "com.mysql.cj.jdbc.Driver"
-#}
+pandas_df = quarterly_avg.toPandas()
+pandas_df = pandas_df.dropna()
 
-#quarterly_avg.write.jdbc(
-#   url=mysql_url,
-#   table="quarterly_averages",
-#   mode="overwrite", 
-#   properties=mysql_properties
-#)
+mydb = mysql.connector.connect(
+    host="localhost",
+    port="3307",
+    user="root",
+    password="",
+    database="ustca"
+)
+
+cursor = mydb.cursor()
+
+create_table_query = """
+CREATE TABLE IF NOT EXISTS quarterly_averages (
+    year INT,
+    quarter VARCHAR(2),
+    element VARCHAR(10),
+    average_value FLOAT
+)
+"""
+cursor.execute(create_table_query)
+mydb.commit()
+
+data = [
+    (int(row['year']), row['quarter'], row['element'], float(row['average_value']))
+    for _, row in pandas_df.iterrows()
+]
+
+insert_query = """
+    INSERT INTO quarterly_averages (year, quarter, element, average_value)
+    VALUES (%s, %s, %s, %s)
+"""
+
+cursor.executemany(insert_query, data)
+mydb.commit()
+
+cursor.close()
+mydb.close()
