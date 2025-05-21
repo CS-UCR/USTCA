@@ -154,5 +154,5 @@ extreme_weather = extreme_weather.groupBy('region', 'year').agg(F.count('is_extr
 extreme_weather.show()
 #4. Try each tasks using different s# spark workers
 
-# Get sources for all info
+# Get sources for all infof
 
