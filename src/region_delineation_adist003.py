@@ -5,6 +5,8 @@ from pyspark.sql import Row
 from pyspark.sql import udf
 from pyspark.sql.types import StringType
 import os
+import math
+
 spark = SparkSession.builder.appName("Region Delineation").getOrCreate()
 
 curr_wcd = os.getcwd()
@@ -22,28 +24,29 @@ stations_path = '/home/cs179g/USTCA/data/stations.csv'
 stations_df = spark.read.format('csv').option('header','true').load(stations_path)
 
 stations_df = stations_df.withColumnRenamed('ID', 'station_id') 
-#print(df.count())
 
-# NW = North West
-# W = West 
-# SW = South West
-# MW = Mid-West
-# SE = South East
-# MA = Mid-Atlantic
-# NE = North East
+def haversine(lon1, lat1, lon2, lat2):
+    R = 6371
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2)**2
+    return 2 * R * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
-def classify_region(lat, lon):
-    lat = float(lat)
+def classify_region(lon, lat):
     lon = float(lon)
-    if 37 <= lat <= 45 and -80 <= lon <= -68:  # Northeast
-        return 'Northeast'
-    if 36 <= lat < 50 and -95 <= lon < -80:  # Midwest
-        return 'Midwest'
-    if 25 <= lat < 36 and -100 <= lon < -80:  # South
-        return 'South'
-    if 32 <= lat < 50 and -125 <= lon < -100:  # West
-        return 'West'
-    return 'Unknown'
+    lat = float(lat)
+    region_centers = {
+        'Northeast': (-74.0, 41.5),
+        'Midwest': (-87.5, 41.6),
+        'South': (-84.4, 33.0),
+        'West': (-118.2, 34.0)
+    }
+    distances = {
+        region: haversine(lon, lat, center_lon, center_lat)
+        for region, (center_lon, center_lat) in region_centers.items()
+    }
+    return min(distances, key=distances.get)
 
 
 

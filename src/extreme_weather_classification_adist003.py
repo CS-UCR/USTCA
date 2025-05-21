@@ -116,7 +116,7 @@ print(anovaMax_summary)
 print("\nANOVA TMIN Results Saved to CSV:")
 print(anovaMin_summary)
 
-print(temp_df.col('region').distinct().count())
+print(temp_df.select('region').distinct().count())
 
 #2 What is the overall trend in temperature? and what is the trend in temperature per region?
 tmin_region_pd = tmin_region_df.toPandas()
