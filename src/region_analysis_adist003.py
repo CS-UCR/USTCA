@@ -148,16 +148,25 @@ plt.close()
 # Define extreme weather conditions
 # do a group by to count tgem
 
-# 3
-# | Tool                          | Good For                  |
-# | ----------------------------- | ------------------------- |
-# | `pandas + matplotlib/seaborn` | Quick trend plotting      |
-# | `statsmodels`                 | Time series decomposition |
-# | `scikit-learn`                | Linear trend detection    |
-# | `PySpark`                     | Scalable trend summaries  |
-# | `Prophet`, `ARIMA`, `LSTM`    | Forecasting temperature   |
+extreme_weather_df = df.filter(col('is_extreme_weather') == 'True')
 
+weather_df = extreme_weather_df.groupBy('year', 'region').agg(F.count('is_extreme_weather').alias('extreme_weather_count'))
 
+weather_pd = weather_df.toPandas()
+
+weather_pd = weather_pd.sort_values(['year', 'region'])
+
+pivot_df = weather_pd.pivot(index='year', columns='region', values='extreme_weather_count').fillna(0)
+
+pivot_df.plot(kind='bar', figsize=(12, 7))
+plt.xlabel('Year')
+plt.ylabel('Extreme Weather Count')
+plt.title('Extreme Weather Events by Year and Region')
+plt.xticks(rotation=45)
+plt.tight_layout()
+
+plt.savefig('extreme_weather_by_year_region.png')
+plt.close()
 
 #4. Try each tasks using different s# spark workers
 
