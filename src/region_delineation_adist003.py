@@ -1,29 +1,21 @@
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-from pyspark.sql.functions import col, substring, when, make_date
-from pyspark.sql import Row
-from pyspark.sql import udf
+from pyspark.sql.functions import col
 from pyspark.sql.types import StringType
 import os
 import math
 
-spark = SparkSession.builder.appName("Region Delineation").getOrCreate()
+spark = SparkSession.builder.appName("Region and Extreme Weather Classification").getOrCreate()
 
-curr_wcd = os.getcwd()
-# Read input file
-#file_path = "ghcnd_hcn" # uncomment for final bit
 file_path = "/home/cs179g/USTCA/data/observations/*.csv"
-# file_path = "ghcnd_hcn/USC00011084.dly"
-
-# df = spark.read.csv(file_path, header=False, inferSchema=True)
-main_df = spark.read.format("csv").option("header","true").load(file_path)
-#     "id","year","month","element",
-# 
-
 stations_path = '/home/cs179g/USTCA/data/stations.csv'
-stations_df = spark.read.format('csv').option('header','true').load(stations_path)
 
-stations_df = stations_df.withColumnRenamed('ID', 'station_id') 
+main_df = spark.read.format("csv").option("header", "true").option("inferSchema", "true").load(file_path)
+stations_df = spark.read.format("csv").option("header", "true").option("inferSchema", "true").load(stations_path)
+
+stations_df = stations_df.withColumnRenamed('ID', 'station_id') \
+                         .withColumn("LATITUDE", col("LATITUDE").cast("double")) \
+                         .withColumn("LONGITUDE", col("LONGITUDE").cast("double"))
 
 def haversine(lon1, lat1, lon2, lat2):
     R = 6371
@@ -48,17 +40,38 @@ def classify_region(lon, lat):
     }
     return min(distances, key=distances.get)
 
-
-
 classify_region_udf = F.udf(classify_region, StringType())
 
 joined_df = main_df.join(stations_df, main_df['id'] == stations_df['station_id'], 'left')
 
-joined_df = joined_df.withColumn('region', classify_region_udf(joined_df['LATITUDE'], joined_df['LONGITUDE']))     
+joined_df = joined_df.withColumn('region', classify_region_udf(col('LONGITUDE'), col('LATITUDE')))
+
+def is_extreme_weather(value_name, value):
+    if value is None or value_name is None:
+        return "False"
+    value = float(value)
+    value_name = str(value_name)
+    if value_name == 'TMAX':
+        value = value / 10
+        return "True" if value > 35 else "False"
+    elif value_name == 'TMIN':
+        value = value / 10
+        return "True" if value < -18 else "False"
+    elif value_name == 'SNWD':
+        return "True" if value > 500 else "False"
+    elif value_name == 'SNOW':
+        return "True" if value > 250 else "False"
+    elif value_name == 'PRCP':
+        return "True" if value > 50 else "False"
+    else:
+        return "False"
+
+classify_extreme_weather = F.udf(is_extreme_weather, StringType())
+
+joined_df = joined_df.withColumn('is_extreme_weather', classify_extreme_weather(col('element'), col('value')))
 
 joined_df.show()
 
 joined_df.write.csv('region_observations', header=True, mode='overwrite')
 
-# Stop the spark job
 spark.stop()
