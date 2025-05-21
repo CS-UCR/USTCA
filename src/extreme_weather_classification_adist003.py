@@ -1,46 +1,158 @@
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-from pyspark.sql.functions import col, substring, when, make_date
+from pyspark.sql.functions import col, substring, when, avg, sum, max, min, count, mean
+from pyspark.sql.functions import to_date, make_date, year 
 from pyspark.sql import Row
 from pyspark.sql import udf
-from pyspark.sql.types import StringType, BinaryType
+from pyspark.sql.types import StringType
 import os
-spark = SparkSession.builder.appName("Extreme Weather Classification").getOrCreate()
+from pyspark.sql.window import Window
+import statsmodels.formula.api as smf
+import statsmodels.api as sm
+from statsmodels.formula.api import ols
+from statsmodels.stats.multicomp import pairwise_tukeyhsd
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import scipy.stats as stats
 
+directory = 'data/region_analysis'
+if not os.path.exists(directory):
+    os.makedirs(directory)
 
-file_path = "/home/cs179g/USTCA/data/region_observations_sample/*.csv"
+spark = SparkSession.builder.appName("Region Analysis").getOrCreate()
 
-main_df = spark.read.format("csv").option("header","true").load(file_path)
-def is_extreme_weather(value_name, value):
-    try:
-        if value is None or value_name is None:
-            return "False"
-        value = float(value)
-        value_name = str(value_name)
-        
-        if value_name == 'TMAX':
-            value = value / 10
-            return "True" if value > 35 else "False"
-        elif value_name == 'TMIN':
-            value = value / 10
-            return "True" if value < -18 else "False"
-        elif value_name == 'SNWD':
-            return "True" if value > 500 else "False"
-        elif value_name == 'SNOW':
-            return "True" if value > 250 else "False"
-        elif value_name == 'PRCP':
-            return "True" if value > 50 else "False"
-        else:
-            return "False"
-    except:
-        return "False"
+df = spark.read.option('header','true').option('inferSchema','true').csv('/home/cs179g/USTCA/data/extrene_weather_samples')
 
-classify_extreme_weather = F.udf(is_extreme_weather, StringType())
+temp_df = df
+temp_df = temp_df.withColumn('date', to_date(temp_df['date'], 'yy-MM-dd'))
+temp_df = temp_df.withColumn('year', year(temp_df['date']))
 
-weather_df = main_df.withColumn('is_extreme_weather', classify_extreme_weather(col('element'), col('value')))
+tmax_df = temp_df.filter(temp_df['element']  == 'TMAX')
+tmin_df = temp_df.filter(temp_df['element']  == 'TMIN')
 
-weather_df.filter(col('is_extreme_weather') == 'True').show()
+tmin_region_df = temp_df.groupBy('region', 'year').agg(F.avg('value').alias('avg_tmin'))
+tmax_region_df = temp_df.groupBy('region', 'year').agg(F.avg('value').alias('avg_tmax'))
 
-weather_df.write.csv('data/extreme_weather_observations', header=True, mode='overwrite')
+window_spec = Window.partitionBy('region').orderBy('year')
 
-spark.stop()
+# 1 Is there a signficant diff between the average temp increase overtime per region?
+# show that the regiosn differ in average temperature 
+tmin_region_df = tmin_region_df.withColumn('prev_avg_tmin', F.lag('avg_tmin').over(window_spec))
+tmin_region_df = tmin_region_df.withColumn('rate_of_change', (F.col('avg_tmin') - F.col('prev_avg_tmin')) / F.col('prev_avg_tmin'))
+
+tmax_region_df = tmax_region_df.withColumn('prev_avg_tmax', F.lag('avg_tmax').over(window_spec))
+tmax_region_df = tmax_region_df.withColumn('rate_of_change', (F.col('avg_tmax') - F.col('prev_avg_tmax')) / F.col('prev_avg_tmax'))
+
+tmin_region_df = tmin_region_df.fillna({'prev_avg_tmin': 0})
+tmin_region_df = tmin_region_df.fillna({'rate_of_change': 0})
+
+tmax_region_df = tmax_region_df.fillna({'prev_avg_tmax': 0})
+tmax_region_df = tmax_region_df.fillna({'rate_of_change': 0})
+
+anovaMax = smf.ols('rate_of_change ~ region', data=tmax_region_df.toPandas()).fit()
+anovaMax_summary = anovaMax.summary()
+
+anovaMax_df = pd.DataFrame(anovaMax_summary.tables[1])
+anovaMax_df.to_csv(os.path.join(directory, 'anovaMax_results.csv'))
+
+anovaMin = smf.ols('rate_of_change ~ region', data=tmin_region_df.toPandas()).fit()
+anovaMin_summary = anovaMin.summary()
+
+anovaMin_df = pd.DataFrame(anovaMin_summary.tables[1])
+anovaMin_df.to_csv(os.path.join(directory, 'anovaMin_results.csv'))
+
+resid_max = anovaMax.resid
+resid_min = anovaMin.resid
+
+plt.figure(figsize=(12, 6))
+
+plt.subplot(1, 2, 1)
+sns.histplot(resid_max, kde=True)
+plt.title('Residuals Distribution for TMAX')
+
+plt.subplot(1, 2, 2)
+sns.histplot(resid_min, kde=True)
+plt.title('Residuals Distribution for TMIN')
+
+plt.tight_layout()
+plt.savefig(os.path.join(directory, 'residuals_distribution.png'))
+plt.close()
+
+plt.figure()
+stats.probplot(resid_max, dist='norm', plot=plt)
+plt.title('Q-Q Plot for TMAX Residuals')
+plt.savefig(os.path.join(directory, 'qq_plot_tmax.png'))
+plt.close()
+
+plt.figure()
+stats.probplot(resid_min, dist='norm', plot=plt)
+plt.title('Q-Q Plot for TMIN Residuals')
+plt.savefig(os.path.join(directory, 'qq_plot_tmin.png'))
+plt.close()
+
+plt.figure(figsize=(12, 6))
+
+plt.subplot(1, 2, 1)
+plt.scatter(anovaMax.fittedvalues, resid_max)
+plt.axhline(0, color='red', linestyle='--')
+plt.title('Residuals vs Fitted for TMAX')
+plt.xlabel('Fitted values')
+plt.ylabel('Residuals')
+
+plt.subplot(1, 2, 2)
+plt.scatter(anovaMin.fittedvalues, resid_min)
+plt.axhline(0, color='red', linestyle='--')
+plt.title('Residuals vs Fitted for TMIN')
+plt.xlabel('Fitted values')
+plt.ylabel('Residuals')
+
+plt.tight_layout()
+plt.savefig(os.path.join(directory, 'residuals_vs_fitted.png'))
+plt.close()
+
+print("ANOVA TMAX Results Saved to CSV:")
+print(anovaMax_summary)
+print("\nANOVA TMIN Results Saved to CSV:")
+print(anovaMin_summary)
+
+print(temp_df.col('region').distinct().count())
+
+#2 What is the overall trend in temperature? and what is the trend in temperature per region?
+tmin_region_pd = tmin_region_df.toPandas()
+tmax_region_pd = tmax_region_df.toPandas()
+
+plt.figure(figsize=(12, 6))
+sns.regplot(data=tmin_region_pd, x='year', y='avg_tmin', scatter_kws={'s': 100}, line_kws={'color': 'red'}, 
+            ci=None, hue='region', palette='Set1', robust=True)
+plt.title('TMIN vs Year by Region with Linear Regression Line')
+plt.xlabel('Year')
+plt.ylabel('Average TMIN')
+plt.legend(title='Region')
+plt.tight_layout()
+plt.savefig(os.path.join(directory, 'scatterplot_tmin_region.png'))
+plt.close()
+
+plt.figure(figsize=(12, 6))
+sns.regplot(data=tmax_region_pd, x='year', y='avg_tmax', scatter_kws={'s': 100}, line_kws={'color': 'blue'}, 
+            ci=None, hue='region', palette='Set2', robust=True)
+plt.title('TMAX vs Year by Region with Linear Regression Line')
+plt.xlabel('Year')
+plt.ylabel('Average TMAX')
+plt.legend(title='Region')
+plt.tight_layout()
+plt.savefig(os.path.join(directory, 'scatterplot_tmax_region.png'))
+plt.close()
+
+# 3  Which Region has had the most extreme weather invents increases overtime
+# Define extreme weather conditions
+# do a group by to count tgem
+
+extreme_weather = df.filter(col('is_extreme_weather') == 'True')
+
+extreme_weather = extreme_weather.groupBy('region', 'year').agg(F.count('is_extreme_weather').alias('extreme_weather_count'))
+extreme_weather.show()
+#4. Try each tasks using different s# spark workers
+
+# Get sources for all info
+
