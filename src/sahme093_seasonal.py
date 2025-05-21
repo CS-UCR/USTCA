@@ -17,7 +17,7 @@ df_with_month = df.selectExpr(
     "date",
     "MONTH(date) AS month",  # extract month from date
     "YEAR(date) AS year" #extract year from date
-
+    
 )
 #Add a "quarter" column
 df_with_quarter = df_with_month.selectExpr(
@@ -33,8 +33,9 @@ df_with_quarter = df_with_month.selectExpr(
 )
 
 #Filter by element (TMAX, TMIN, PRCP)
-filtered = df_with_quarter.filter("element = 'TMAX' OR element = 'TMIN' OR element = 'PRCP'")
-
+#filtered = df_with_quarter.filter("element = 'TMAX' OR element = 'TMIN' OR element = 'PRCP'")
+filtered = df_with_quarter.filter("element = 'TMIN'")
+                                  
 #Group by year, quarter, and element
 quarterly_avg = filtered.groupBy("year", "quarter", "element").agg(
     avg("value").alias("average_value")
@@ -46,16 +47,16 @@ quarterly_avg = quarterly_avg.withColumn("average_value", col("average_value") /
 #quarterly_avg.orderBy("year", "quarter", "element").show(50) #Single table with all elements 
 
 #Separate table for each element
-tmax_table = quarterly_avg.filter("element = 'TMAX'").drop("element")
+#tmax_table = quarterly_avg.filter("element = 'TMAX'").drop("element")
 tmin_table = quarterly_avg.filter("element = 'TMIN'").drop("element")
-prcp_table = quarterly_avg.filter("element = 'PRCP'").drop("element")
+#prcp_table = quarterly_avg.filter("element = 'PRCP'").drop("element")
 
-print("Average TMAX")
-tmax_table.orderBy("year", "quarter").show()
+#print("Average TMAX")
+#tmax_table.orderBy("year", "quarter").show()
 print("Average TMIN")
 tmin_table.orderBy("year", "quarter").show()
-print("Average PRCP")
-prcp_table.orderBy("year", "quarter").show()
+#print("Average PRCP")
+#prcp_table.orderBy("year", "quarter").show()
 
 pandas_df = quarterly_avg.toPandas()
 pandas_df = pandas_df.dropna()

@@ -15,14 +15,17 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import scipy.stats as stats
+import subprocess
+import time
 
-directory = 'data/region_analysis'
+
+directory = 'data/region_analysis/test'
 if not os.path.exists(directory):
     os.makedirs(directory)
 
 spark = SparkSession.builder.appName("Region Analysis").getOrCreate()
 
-df = spark.read.option('header','true').option('inferSchema','true').csv('/home/cs179g/USTCA/data/region_observations')
+df = spark.read.option('header','true').option('inferSchema','true').csv('/home/cs179g/USTCA/data/region_observations_samples/*.csv')
 
 temp_df = df
 temp_df = temp_df.withColumn('date', to_date(temp_df['date'], 'yy-MM-dd'))
@@ -115,50 +118,3 @@ print("ANOVA TMAX Results Saved to CSV:")
 print(anovaMax_summary)
 print("\nANOVA TMIN Results Saved to CSV:")
 print(anovaMin_summary)
-
-
-#2 What is the overall trend in temperature? and what is the trend in temperature per region?
-tmin_region_pd = tmin_region_df.toPandas()
-tmax_region_pd = tmax_region_df.toPandas()
-
-# For the TMIN plot
-plt.figure(figsize=(12, 6))
-sns.lmplot(data=tmin_region_pd, x='year', y='avg_tmin', hue='region', scatter_kws={'s': 100},
-           line_kws={'linewidth': 2, 'linestyle': '--'}, ci=None, palette='Set1', robust=True)
-plt.title('TMIN vs Year by Region with Linear Regression Line')
-plt.xlabel('Year')
-plt.ylabel('Average TMIN')
-plt.tight_layout()
-plt.savefig(os.path.join(directory, 'scatterplot_tmin_region.png'))
-plt.close()
-
-# For the TMAX plot
-plt.figure(figsize=(12, 6))
-sns.lmplot(data=tmax_region_pd, x='year', y='avg_tmax', hue='region', scatter_kws={'s': 100},
-           line_kws={'linewidth': 2, 'linestyle': '-.'}, ci=None, palette='Set2', robust=True)
-plt.title('TMAX vs Year by Region with Linear Regression Line')
-plt.xlabel('Year')
-plt.ylabel('Average TMAX')
-plt.tight_layout()
-plt.savefig(os.path.join(directory, 'scatterplot_tmax_region.png'))
-plt.close()
-
-# 3  Which Region has had the most extreme weather invents increases overtime
-# Define extreme weather conditions
-
-extreme_weather_df = temp_df.filter(col('is_extreme_weather') == 'True')
-
-region_df = extreme_weather_df.groupBy('region').agg(F.count('is_extreme_weather').alias('extreme_weather_count'))
-
-region_pd = region_df.toPandas().sort_values('region')
-
-plt.figure(figsize=(10, 6))
-plt.bar(region_pd['region'], region_pd['extreme_weather_count'], color='skyblue')
-plt.xlabel('Region')
-plt.ylabel('Extreme Weather Count')
-plt.title('Extreme Weather Events by Region')
-plt.tight_layout()
-
-plt.savefig(os.path.join(directory, 'extreme_weather_by_region.png'))
-plt.close()
-#4. Try each tasks using different s# spark workers

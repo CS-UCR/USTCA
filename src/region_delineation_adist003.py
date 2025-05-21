@@ -72,6 +72,6 @@ joined_df = joined_df.withColumn('is_extreme_weather', classify_extreme_weather(
 
 joined_df.show()
 
-joined_df.write.csv('region_observations', header=True, mode='overwrite')
+joined_df.write.csv('data/region_observations', header=True, mode='overwrite')
 
 spark.stop()
