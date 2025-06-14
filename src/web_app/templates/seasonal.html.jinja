@@ -1,0 +1,198 @@
+{% extends "base.html.jinja" %}
+
+{% block title %}Seasonal Analysis - USTCA{% endblock %}
+
+{% block content %}
+  <div class="container mx-auto px-4 py-6">
+    <h1 class="text-3xl font-semibold mb-6">Seasonal Data Analysis</h1>
+
+    <form method="post" class="bg-white shadow rounded-lg p-6 mb-8">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div>
+          <label for="start_year" class="block text-gray-700 text-sm font-medium mb-1">Start Year</label>
+          <input
+            name="start_year"
+            type="number"
+            id="start_year"
+            required
+            placeholder="e.g., 2000"
+            class="w-full border rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+        <div>
+          <label for="end_year" class="block text-gray-700 text-sm font-medium mb-1">End Year</label>
+          <input
+            name="end_year"
+            type="number"
+            id="end_year"
+            required
+            placeholder="e.g., 2020"
+            class="w-full border rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+        <div>
+          <label for="quarter" class="block text-gray-700 text-sm font-medium mb-1">Quarter</label>
+          <select
+            name="quarter"
+            id="quarter"
+            required
+            class="w-full border rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="" disabled selected>Select Quarter</option>
+            <option value="1">Q1</option>
+            <option value="2">Q2</option>
+            <option value="3">Q3</option>
+            <option value="4">Q4</option>
+          </select>
+        </div>
+        <div>
+          <label for="state" class="block text-gray-700 text-sm font-medium mb-1">State or Station ID</label>
+          <input
+            name="state"
+            type="text"
+            id="state"
+            required
+            placeholder="e.g., CA or USC00042319"
+            class="w-full border rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end">
+        <button
+          type="submit"
+          class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          Submit
+        </button>
+      </div>
+    </form>
+
+    {% if submitted and (result is none or result|length == 0) %}
+      <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg">
+        <p>No results found. Please adjust your filters and try again.</p>
+      </div>
+    {% elif result %}
+      <div class="bg-white shadow rounded-lg p-6 mb-8">
+        <h2 class="text-2xl font-semibold mb-4">
+          Results: {{ request.form.start_year }} – {{ request.form.end_year }}, Q{{ request.form.quarter }}, {{ request.form.state|upper }}
+        </h2>
+
+        <div class="w-full max-w-3xl mx-auto mb-6">
+          <canvas id="seasonalChart"></canvas>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+          const labels = {{ result | map(attribute='year') | list }};
+          const data = {
+            labels: labels,
+            datasets: [
+              {
+                label: 'TMIN',
+                data: {{ result | map(attribute='tmin') | list }},
+                borderColor: 'rgba(37, 99, 235, 1)',
+                borderWidth: 2,
+                fill: false,
+                tension: 0.1
+              },
+              {
+                label: 'TMAX',
+                data: {{ result | map(attribute='tmax') | list }},
+                borderColor: 'rgba(220, 38, 38, 1)',
+                borderWidth: 2,
+                fill: false,
+                tension: 0.1
+              },
+              {
+                label: 'PRCP',
+                data: {{ result | map(attribute='prcp') | list }},
+                borderColor: 'rgba(22, 163, 74, 1)',
+                borderWidth: 2,
+                fill: false,
+                tension: 0.1
+              }
+            ]
+          };
+
+          new Chart(document.getElementById('seasonalChart'), {
+            type: 'line',
+            data: data,
+            options: {
+              responsive: true,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  grid: {
+                    color: 'rgba(229, 231, 235, 1)'
+                  },
+                  title: {
+                    display: true,
+                    text: 'Value'
+                  }
+                },
+                x: {
+                  title: {
+                    display: true,
+                    text: 'Year'
+                  }
+                }
+              },
+              plugins: {
+                legend: {
+                  position: 'top'
+                },
+                tooltip: {
+                  mode: 'index',
+                  intersect: false
+                }
+              }
+            }
+          });
+        </script>
+
+        <div class="mt-6 space-y-4">
+          <div>
+            <p class="text-gray-700">
+              {% if tmax_slope is not none %}
+                {% if tmax_slope > 0 %}
+                  <span class="font-semibold text-green-600">TMAX</span> has increased over the years (slope: {{ tmax_slope | round(3) }})
+                {% elif tmax_slope < 0 %}
+                  <span class="font-semibold text-red-600">TMAX</span> has decreased over the years (slope: {{ tmax_slope | round(3) }})
+                {% else %}
+                  <span class="font-semibold">TMAX</span>: No significant trend detected.
+                {% endif %}
+              {% endif %}
+            </p>
+          </div>
+          <div>
+            <p class="text-gray-700">
+              {% if tmin_slope is not none %}
+                {% if tmin_slope > 0 %}
+                  <span class="font-semibold text-green-600">TMIN</span> has increased over the years (slope: {{ tmin_slope | round(3) }})
+                {% elif tmin_slope < 0 %}
+                  <span class="font-semibold text-red-600">TMIN</span> has decreased over the years (slope: {{ tmin_slope | round(3) }})
+                {% else %}
+                  <span class="font-semibold">TMIN</span>: No significant trend detected.
+                {% endif %}
+              {% endif %}
+            </p>
+          </div>
+          <div>
+            <p class="text-gray-700">
+              {% if prcp_slope is not none %}
+                {% if prcp_slope > 0 %}
+                  <span class="font-semibold text-green-600">PRCP</span> has increased over the years (slope: {{ prcp_slope | round(3) }})
+                {% elif prcp_slope < 0 %}
+                  <span class="font-semibold text-red-600">PRCP</span> has decreased over the years (slope: {{ prcp_slope | round(3) }})
+                {% else %}
+                  <span class="font-semibold">PRCP</span>: No significant trend detected.
+                {% endif %}
+              {% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

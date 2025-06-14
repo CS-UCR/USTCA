@@ -1,0 +1,147 @@
+{% extends "base.html.jinja" %}
+
+{% block title %}Elevation Analysis - USTCA{% endblock %}
+
+{% block content %}
+  <div class="container mx-auto px-4 py-6">
+    <h1 class="text-3xl font-semibold mb-6">Elevation Data Analysis</h1>
+
+    <form method="post" class="bg-white shadow rounded-lg p-6 mb-8">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div>
+          <label for="start_year" class="block text-gray-700 text-sm font-medium mb-1">Start Year</label>
+          <input name="start_year" type="number" id="start_year" required placeholder="e.g., 2000"
+            class="w-full border rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+        <div>
+          <label for="end_year" class="block text-gray-700 text-sm font-medium mb-1">End Year</label>
+          <input name="end_year" type="number" id="end_year" required placeholder="e.g., 2020"
+            class="w-full border rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+        <div>
+          <label for="elevation_range" class="block text-gray-700 text-sm font-medium mb-1">Elevation Range</label>
+          <select name="elevation_range" id="elevation_range" required
+            class="w-full border rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="" disabled selected>Select Range</option>
+            <option value="below_sea_level">Below Sea Level</option>
+            <option value="0_150">0 – 150</option>
+            <option value="150_300">150 – 300</option>
+            <option value="above_300">Above 300</option>
+          </select>
+        </div>
+        <div>
+          <label for="location" class="block text-gray-700 text-sm font-medium mb-1">State or Station ID</label>
+          <input name="location" type="text" id="location" required placeholder="e.g., CA or USC00042319"
+            class="w-full border rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end">
+        <button type="submit"
+          class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          Submit
+        </button>
+      </div>
+    </form>
+     {% if submitted and (result is none or result|length == 0) %}
+      <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mt-6">
+        <p>No results found. Please adjust your filters and try again.</p>
+      </div>
+    {% elif result %}
+      <div class="bg-white shadow rounded-lg p-6 mt-8">
+        <h2 class="text-2xl font-semibold mb-4">
+          Yearly Averages for {{ request.form.location|upper }} ({{ request.form.start_year }}–{{ request.form.end_year }})
+        </h2>
+
+        <div class="w-full max-w-4xl mx-auto">
+          <canvas id="yearlyElevationChart"></canvas>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+          const yearlyLabels = {{ result | map(attribute='year') | list }};
+          const yearlyData = {
+            labels: yearlyLabels,
+            datasets: [
+              {
+                label: 'TMIN (°C)',
+                data: {{ result | map(attribute='tmin') | list }},
+                borderColor: 'rgba(59, 130, 246, 1)',
+                backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.2
+              },
+              {
+                label: 'TMAX (°C)',
+                data: {{ result | map(attribute='tmax') | list }},
+                borderColor: 'rgba(239, 68, 68, 1)',
+                backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.2
+              },
+              {
+                label: 'PRCP (mm)',
+                data: {{ result | map(attribute='prcp') | list }},
+                borderColor: 'rgba(34, 197, 94, 1)',
+                backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.2
+              }
+            ]
+          };
+
+          new Chart(document.getElementById('yearlyElevationChart'), {
+            type: 'line',
+            data: yearlyData,
+            options: {
+              responsive: true,
+              plugins: {
+                legend: { position: 'top' },
+                tooltip: { mode: 'index', intersect: false }
+              },
+              scales: {
+                y: {
+                  beginAtZero: false,
+                  title: { display: true, text: 'Average Value' }
+                },
+                x: {
+                  title: { display: true, text: 'Year' }
+                }
+              }
+            }
+          });
+        </script>
+      </div>
+    {% endif %}
+  </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div class="bg-white rounded-lg shadow p-4 flex flex-col">
+        <a href="https://ibb.co/MyNHZKvj"><img src="https://i.ibb.co/gbg8mQ2X/rateof-Change-Temp-Across-Bins.png"
+            alt="rateof-Change-Temp-Across-Bins" border="0"></a>
+        <h3 class="text-lg font-semibold mb-2">Temperate Trends Per Elevation</h3>
+        <p class="text-sm mb-1">- This is clear visual of the slopes, or rates of change, that each bin has.</p>
+      </div>
+      <div class="bg-white rounded-lg shadow p-4 flex flex-col">
+        <a href="https://ibb.co/WWGjJVYy"><img src="https://i.ibb.co/XZjMRYvs/avg-Temp-By-Years-Across-Bins-Max.png"
+            alt="avg-Temp-By-Years-Across-Bins-Max" border="0"></a>
+        <h3 class="text-lg font-semibold mb-2">Average Max Temperate Trends</h3>
+        <p class="text-sm mb-1">Shows how the max temperatures are changing over time per bin.</p>
+      </div>
+      <div class="bg-white rounded-lg shadow p-4 flex flex-col">
+        <a href="https://ibb.co/PGLLrBDX"><img src="https://i.ibb.co/tpGGHyLj/avg-Temp-By-Years-Across-Bins-Min.png"
+            alt="avg-Temp-By-Years-Across-Bins-Min" border="0"></a>
+        <h3 class="text-lg font-semibold mb-2">Average Min Temperate Trends</h3>
+        <p class="text-sm mb-1">Min temperature trends are analyzed here by year and elevation bin.</p>
+      </div>
+      <div class="bg-white rounded-lg shadow p-4 flex flex-col">
+        <a href="https://ibb.co/Q3QYYvmw"><img src="https://i.ibb.co/67wDD0sC/pie-Station-Count.png"
+            alt="pie-Station-Count" border="0"></a>
+        <h3 class="text-lg font-semibold mb-2">Station Count</h3>
+        <p class="text-sm mb-1">Displays the distribution of stations across elevation bins.</p>
+      </div>
+    </div>
+
+{% endblock %}

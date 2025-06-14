@@ -1,0 +1,227 @@
+{% extends "base.html.jinja" %}
+
+{% block title %}Climate Analysis – USTCA{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-4">
+  <h1 class="text-3xl font-semibold mb-6">Climate Data Analysis</h1>
+
+  <div class="mb-8">
+    <h2 class="text-xl font-semibold mb-4">
+      Climate Classification – Köppen
+      <sup><a href="https://en.wikipedia.org/wiki/K%C3%B6ppen_climate_classification#Overview" target="_blank" class="text-indigo-600 underline">1</a></sup>
+    </h2>
+    <p class="text-sm">In our data: avg monthly = (TMAX + TMIN) / 2</p>
+    <br/>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+    </div>
+  </div>
+
+ <div class="grid grid-cols-4 lg:grid-cols-3 gap-6">
+  <div class="flex flex-col items-center bg-white p-4 rounded-lg shadow">
+    <h3 class="text-lg font-semibold mt-4 mb-2">Class A – TMIN</h3>
+    <a href="https://ibb.co/Vpx6KX8j"><img src="https://i.ibb.co/KzDn1CH0/climate-TMIN-zone-A.png" alt="climate-TMIN-zone-A" class="w-full h-auto rounded" /></a>
+  </div>
+  <div class="flex flex-col items-center bg-white p-4 rounded-lg shadow">
+    <h3 class="text-lg font-semibold mt-4 mb-2">Class A – TMAX</h3>
+    <a href="https://ibb.co/TBB4Cm2W"><img src="https://i.ibb.co/277vbghZ/climate-TMAX-zone-A.png" alt="climate-TMAX-zone-A" class="w-full h-auto rounded" /></a>
+  </div>
+  <div class="flex flex-col items-center bg-white p-4 rounded-lg shadow">
+    <h3 class="text-lg font-semibold mt-4 mb-2">Class A – PRCP</h3>
+    <a href="https://ibb.co/QjTv4FHq"><img src="https://i.ibb.co/dJV4R0p3/climate-PRCP-zone-A.png" alt="climate-PRCP-zone-A" class="w-full h-auto rounded" /></a>
+  </div>
+
+  <div class="flex flex-col items-center bg-white p-4 rounded-lg shadow">
+    <h3 class="text-lg font-semibold mt-4 mb-2">Class B – TMIN</h3>
+    <a href="https://ibb.co/3Y8y3SyH"><img src="https://i.ibb.co/rfLGj5GJ/climate-TMIN-zone-B.png" alt="climate-TMIN-zone-B" class="w-full h-auto rounded" /></a>
+  </div>
+  <div class="flex flex-col items-center bg-white p-4 rounded-lg shadow">
+    <h3 class="text-lg font-semibold mt-4 mb-2">Class B – TMAX</h3>
+    <a href="https://ibb.co/wZ541tV4"><img src="https://i.ibb.co/FkRztp2z/climate-TMAX-zone-B.png" alt="climate-TMAX-zone-B" class="w-full h-auto rounded" /></a>
+  </div>
+  <div class="flex flex-col items-center bg-white p-4 rounded-lg shadow">
+    <h3 class="text-lg font-semibold mt-4 mb-2">Class B – PRCP</h3>
+    <a href="https://ibb.co/679hmmqV"><img src="https://i.ibb.co/hJQ5yyTh/climate-PRCP-zone-B.png" alt="climate-PRCP-zone-B" class="w-full h-auto rounded" /></a>
+  </div>
+
+  <div class="flex flex-col items-center bg-white p-4 rounded-lg shadow">
+    <h3 class="text-lg font-semibold mt-4 mb-2">Class C – TMIN</h3>
+    <a href="https://ibb.co/gZn39WKk"><img src="https://i.ibb.co/23byhM4G/climate-TMIN-zone-C.png" alt="climate-TMIN-zone-C" class="w-full h-auto rounded" /></a>
+  </div>
+  <div class="flex flex-col items-center bg-white p-4 rounded-lg shadow">
+    <h3 class="text-lg font-semibold mt-4 mb-2">Class C – TMAX</h3>
+    <a href="https://ibb.co/39jLV0Tx"><img src="https://i.ibb.co/Mxt3KRgz/climate-TMAX-zone-C.png" alt="climate-TMAX-zone-C" class="w-full h-auto rounded" /></a>
+  </div>
+  <div class="flex flex-col items-center bg-white p-4 rounded-lg shadow">
+    <h3 class="text-lg font-semibold mt-4 mb-2">Class C – PRCP</h3>
+    <a href="https://ibb.co/k6VzX8hw"><img src="https://i.ibb.co/LhDB1tCc/climate-PRCP-zone-C.png" alt="climate-PRCP-zone-C" class="w-full h-auto rounded" /></a>
+  </div>
+
+  <div class="flex flex-col items-center bg-white p-4 rounded-lg shadow">
+    <h3 class="text-lg font-semibold mt-4 mb-2">Class D – TMIN</h3>
+    <a href="https://ibb.co/dwnRBjWC"><img src="https://i.ibb.co/fzmsMq16/climate-TMIN-zone-D.png" alt="climate-TMIN-zone-D" class="w-full h-auto rounded" /></a>
+  </div>
+  <div class="flex flex-col items-center bg-white p-4 rounded-lg shadow">
+    <h3 class="text-lg font-semibold mt-4 mb-2">Class D – TMAX</h3>
+    <a href="https://ibb.co/LD2f8bb3"><img src="https://i.ibb.co/1YwxLhhk/climate-TMAX-zone-D.png" alt="climate-TMAX-zone-D" class="w-full h-auto rounded" /></a>
+  </div>
+  <div class="flex flex-col items-center bg-white p-4 rounded-lg shadow">
+    <h3 class="text-lg font-semibold mt-4 mb-2">Class D – PRCP</h3>
+    <a href="https://ibb.co/fd5JwBWP"><img src="https://i.ibb.co/LdWK7by2/climate-PRCP-zone-D.png" alt="climate-PRCP-zone-D" class="w-full h-auto rounded" /></a>
+  </div>
+</div>
+
+
+
+  <hr class="my-8 border-gray-300">
+
+  <div class="mb-8">
+    <h2 class="text-xl font-semibold mb-4">Climate Trend Analysis</h2>
+
+    <form method="post" class="bg-white shadow rounded-lg p-6 mb-8">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div>
+          <label for="start_year" class="block text-gray-700 text-sm font-medium mb-1">Start Year</label>
+          <input
+            name="start_year"
+            type="number"
+            id="start_year"
+            required
+            placeholder="e.g., 2000"
+            class="w-full border rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+
+        <div>
+          <label for="end_year" class="block text-gray-700 text-sm font-medium mb-1">End Year</label>
+          <input
+            name="end_year"
+            type="number"
+            id="end_year"
+            required
+            placeholder="e.g., 2020"
+            class="w-full border rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+
+        <div>
+          <label for="climate_class" class="block text-gray-700 text-sm font-medium mb-1">Climate Class</label>
+          <select
+            name="climate_class"
+            id="climate_class"
+            required
+            class="w-full border rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="" disabled selected>Select Class</option>
+            <option value="A">A (Tropical)</option>
+            <option value="B">B (Dry)</option>
+            <option value="C">C (Temperate)</option>
+            <option value="D">D (Continental)</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="metric" class="block text-gray-700 text-sm font-medium mb-1">Metric</label>
+          <select
+            name="metric"
+            id="metric"
+            required
+            class="w-full border rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="" disabled selected>Select Metric</option>
+            <option value="TMAX">TMAX</option>
+            <option value="TMIN">TMIN</option>
+            <option value="PRCP">PRCP</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end">
+        <button
+          type="submit"
+          class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          Submit
+        </button>
+      </div>
+    </form>
+
+    {% if submitted and (result is none or result|length == 0) %}
+      <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg">
+        <p>No data found. Please adjust your filters and try again.</p>
+      </div>
+
+    {% elif result %}
+      <div class="bg-white shadow rounded-lg p-6 mb-8">
+        <h2 class="text-2xl font-semibold mb-4">
+          Results: {{ request.form.start_year }} – {{ request.form.end_year }}, 
+          Class {{ request.form.climate_class }}, {{ metric | upper }}
+        </h2>
+
+        <div class="w-full max-w-3xl mx-auto mb-6">
+          <canvas id="climateChart"></canvas>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+          const labels = {{ result | map(attribute='year') | list | tojson }};
+          const dataValues = {{ result | map(attribute='value') | list | tojson }};
+
+          const data = {
+            labels: labels,
+            datasets: [
+              {
+                label: '{{ metric | upper }}',
+                data: dataValues,
+                borderColor: 'rgba(37, 99, 235, 1)',
+                backgroundColor: 'rgba(37, 99, 235, 0.2)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.1
+              }
+            ]
+          };
+
+          const config = {
+            type: 'line',
+            data: data,
+            options: {
+              responsive: true,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  grid: { color: 'rgba(229, 231, 235, 1)' },
+                  title: { display: true, text: '{{ metric | upper }}' }
+                },
+                x: {
+                  title: { display: true, text: 'Year' }
+                }
+              },
+              plugins: {
+                legend: { display: true },
+                tooltip: { mode: 'index', intersect: false }
+              }
+            }
+          };
+
+          new Chart(document.getElementById('climateChart'), config);
+        </script>
+
+        <div class="mt-6 space-y-4">
+          <p class="text-gray-700">
+            {% if slope is not none %}
+              {% if slope > 0 %}
+                <span class="font-semibold text-green-600">{{ metric | upper }}</span> shows an increasing trend (slope: {{ slope | round(3) }})
+              {% elif slope < 0 %}
+                <span class="font-semibold text-red-600">{{ metric | upper }}</span> shows a decreasing trend (slope: {{ slope | round(3) }})
+              {% else %}
+                <span class="font-semibold">{{ metric | upper }}</span>: No significant trend detected.
+              {% endif %}
+            {% endif %}
+          </p>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
