@@ -1,0 +1,150 @@
+{% extends "base.html.jinja" %}
+
+{% block title %}Home - USTCA{% endblock %}
+
+{% block content %}
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+  />
+
+  <h1 class="text-4xl font-bold mb-6 text-center">Welcome to USTCA</h1>
+  <p class="text-lg text-center mb-12">
+    Explore weather trends across the United States using interactive visual tools and summary statistics.
+  </p>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <a href="/regional" class="block">
+      <div class="bg-white rounded-2xl shadow p-6 hover:shadow-lg transition-shadow">
+        <h2 class="text-2xl font-semibold mb-2">🌎 Regional</h2>
+        <p>
+          View summary statistics for each region, including <strong>TMAX</strong>, <strong>TMIN</strong>, and <strong>PRCP</strong>. A regional map is included for context.
+        </p>
+      </div>
+    </a>
+
+    <a href="/seasonal" class="block">
+      <div class="bg-white rounded-2xl shadow p-6 hover:shadow-lg transition-shadow">
+        <h2 class="text-2xl font-semibold mb-2">📆 Seasonal</h2>
+        <p>
+          Select a year, quarter, and location to visualize seasonal weather data. See how maximum temperature, minimum temperature, and precipitation change over time by season.
+        </p>
+      </div>
+    </a>
+
+    <a href="/elevation" class="block">
+      <div class="bg-white rounded-2xl shadow p-6 hover:shadow-lg transition-shadow">
+        <h2 class="text-2xl font-semibold mb-2">⛰️ Elevation</h2>
+        <p>
+          Compare weather data across different elevation ranges. Find out how elevation affects temperature and precipitation patterns for specific locations and years.
+        </p>
+      </div>
+    </a>
+
+    <a href="/climate" class="block">
+      <div class="bg-white rounded-2xl shadow p-6 hover:shadow-lg transition-shadow">
+        <h2 class="text-2xl font-semibold mb-2">🌤️ Climate</h2>
+        <p>
+          Discover the four climate classes (Tropical(A), Dry(B), Temperate(C), Contienental(D)) and explore visualizations of TMAX, TMIN, and PRCP across time by class. Interactive filtering options included.
+        </p>
+      </div>
+    </a>
+  </div>
+
+  <div class="mt-12 bg-white rounded-2xl shadow p-6">
+    <h2 class="text-2xl font-semibold mb-4">🗺️ Weather Stations Map</h2>
+      <p class="mb-4 text-gray-700">
+        This map displays the geographical locations of all weather stations across the United States from our dataset. 
+        Click “Load Stations” to fetch and plot each station as a clustered marker on the map. 
+        Zoom in to see individual station markers, and hover over any marker to view its ID, name, state, and elevation.
+      </p>
+    <div id="map" class="w-full h-96 rounded-2xl"></div>
+    <br/>
+    <div class="text-center mb-4">
+      <button
+        id="load-stations-btn"
+        class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+      >
+        Load Stations (may take a few seconds)
+      </button>
+    </div>
+  </div>
+
+  <div class="mt-12 text-center">
+    <a 
+      href="https://github.com/CS-UCR/USTCA" 
+      target="_blank" 
+      class="inline-block text-indigo-600 hover:underline"
+    >
+      View our repository on GitHub: CS-UCR/USTCA
+    </a>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const map = L.map("map").setView([37.8, -96.0], 4);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 18,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> USTCA'
+      }).addTo(map);
+
+      document.getElementById("load-stations-btn").addEventListener("click", function () {
+        fetch("/api/stations")
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`Network response was not OK: ${response.statusText}`);
+            }
+            return response.json();
+          })
+          .then(data => {
+            if (!Array.isArray(data) || data.length === 0) {
+              console.warn(">>> No station data returned or not an array:", data);
+              return;
+            }
+
+            const markers = L.markerClusterGroup();
+
+            data.forEach((st, idx) => {
+              if (st.latitude && st.longitude) {
+                const m = L.circleMarker([st.latitude, st.longitude], {
+                  radius: 6.5,
+                  color: "#3182ce",
+                  fillColor: "#3182ce",
+                  fillOpacity: 0.7
+                });
+                m.bindTooltip(`
+                  <strong>ID:</strong> ${st.id}<br/>
+                  <strong>Name:</strong> ${st.name}<br/>
+                  <strong>State:</strong> ${st.state}<br/>
+                  <strong>Elevation:</strong> ${st.elevation}
+                `, { direction: "top", offset: [0, -5] });
+
+                markers.addLayer(m);
+              }
+            });
+
+            map.addLayer(markers);
+          })
+          .catch(err => {
+            console.error(">>> Failed to fetch station data:", err);
+          });
+      });
+    });
+  </script>
+{% endblock %}

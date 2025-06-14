@@ -1,0 +1,211 @@
+{% extends "base.html.jinja" %}
+
+{% block title %}Regional Summary - USTCA{% endblock %}
+
+{% block content %}
+    <p>
+      <a href="https://banana1015.com/why-michigan-is-considered-midwest-when-its-barely-mid-and-not-at-all-west/">
+        <img src="https://townsquare.media/site/84/files/2019/07/United-States-Map-Regions.png?w=1600&q=75" alt="Region Map" class="w-1/2 h-auto mb-6" />
+      </a>
+    </p>
+
+    <h4 class="text-2xl font-semibold mb-4">
+      <a href="https://www2.census.gov/geo/pdfs/maps-data/maps/reference/us_regdiv.pdf" class="text-blue-500 hover:underline">
+        Region Definitions Source
+      </a>
+    </h4>
+  <div class="container mx-auto px-4 py-6">
+    <form method="post" class="bg-white shadow rounded-lg p-6 mb-8">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div>
+          <label for="start_year" class="block text-gray-700 text-sm font-medium mb-1">Start Year</label>
+          <input
+            name="start_year"
+            type="number"
+            id="start_year"
+            required
+            placeholder="e.g., 2000"
+            class="w-full border rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+        <div>
+          <label for="end_year" class="block text-gray-700 text-sm font-medium mb-1">End Year</label>
+          <input
+            name="end_year"
+            type="number"
+            id="end_year"
+            required
+            placeholder="e.g., 2020"
+            class="w-full border rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+        <div>
+          <label for="region" class="block text-gray-700 text-sm font-medium mb-1">Region</label>
+          <select
+            name="region"
+            id="region"
+            required
+            class="w-full border rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="" disabled selected>Select Region</option>
+            <option value="West">West</option>
+            <option value="Northeast">Northeast</option>
+            <option value="South">South</option>
+            <option value="Midwest">Midwest</option>
+          </select>
+        </div>
+      </div>
+    {% if submitted and (result is none or result|length == 0) %}
+      <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mt-6">
+        <p>No results found. Please adjust your filters and try again.</p>
+      </div>
+    {% elif result %}
+      <div class="bg-white shadow rounded-lg p-6 mt-8">
+        <h2 class="text-xl font-semibold mb-4">
+          Filtered Results: {{ request.form.start_year }} to {{ request.form.end_year }} for region {{ request.form.region }}
+        </h2>
+
+        <table class="min-w-full bg-white shadow rounded mb-6">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3">Year</th>
+              <th class="px-6 py-3">TMIN (°C)</th>
+              <th class="px-6 py-3">TMAX (°C)</th>
+              <th class="px-6 py-3">PRCP (mm)</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            {% for row in result %}
+            <tr>
+              <td class="px-6 py-4">{{ row.year }}</td>
+              <td class="px-6 py-4">{{ row.tmin|round(2) if row.tmin is not none else 'N/A' }}</td>
+              <td class="px-6 py-4">{{ row.tmax|round(2) if row.tmax is not none else 'N/A' }}</td>
+              <td class="px-6 py-4">{{ row.prcp|round(2) if row.prcp is not none else 'N/A' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <div>
+          <p><strong>TMAX slope:</strong> {{ tmax_slope if tmax_slope is not none else "N/A" }}</p>
+          <p><strong>TMIN slope:</strong> {{ tmin_slope if tmin_slope is not none else "N/A" }}</p>
+          <p><strong>PRCP slope:</strong> {{ prcp_slope if prcp_slope is not none else "N/A" }}</p>
+        </div>
+
+        <canvas id="climateChart" width="800" height="400" class="mt-8"></canvas>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+          const data = {{ result | tojson }};
+          const years = data.map(row => row.year);
+          const tmax = data.map(row => row.tmax !== null ? row.tmax : null);
+          const tmin = data.map(row => row.tmin !== null ? row.tmin : null);
+          const prcp = data.map(row => row.prcp !== null ? row.prcp : null);
+
+          const ctx = document.getElementById('climateChart').getContext('2d');
+
+          if (window.climateChartInstance) {
+            window.climateChartInstance.destroy();
+          }
+
+          window.climateChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: years,
+              datasets: [
+                {
+                  label: 'TMAX (°C)',
+                  data: tmax,
+                  borderColor: 'rgba(255, 99, 132, 1)',
+                  backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                  fill: false,
+                  spanGaps: true
+                },
+                {
+                  label: 'TMIN (°C)',
+                  data: tmin,
+                  borderColor: 'rgba(54, 162, 235, 1)',
+                  backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                  fill: false,
+                  spanGaps: true
+                },
+                {
+                  label: 'PRCP (mm)',
+                  data: prcp,
+                  borderColor: 'rgba(75, 192, 192, 1)',
+                  backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                  fill: false,
+                  spanGaps: true
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              scales: {
+                y: {
+                  beginAtZero: false
+                }
+              }
+            }
+          });
+        </script>
+      </div>
+    {% endif %}
+  </div>
+      <div class="mt-6 flex justify-end">
+        <button
+          type="submit"
+          class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          Submit
+        </button>
+      </div>
+    </form>
+    <h2 class="text-2xl font-semibold mb-4">Regional Summary Statistics and Analysis</h2>
+    <table class="min-w-full bg-white shadow rounded">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3">Region</th>
+          <th class="px-6 py-3">Avg TMAX (°C)</th>
+          <th class="px-6 py-3">Min TMAX (°C)</th>
+          <th class="px-6 py-3">Max TMAX (°C)</th>
+          <th class="px-6 py-3">Avg TMIN (°C)</th>
+          <th class="px-6 py-3">Min TMIN (°C)</th>
+          <th class="px-6 py-3">Max TMIN (°C)</th>
+          <th class="px-6 py-3">Avg PRCP (mm)</th>
+          <th class="px-6 py-3">Min PRCP (mm)</th>
+          <th class="px-6 py-3">Max PRCP (mm)</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200">
+        {% for r in regions %}
+        <tr>
+          <td class="px-6 py-4
+            {% if r.region == 'Midwest' %}
+              text-blue-600
+            {% elif r.region == 'Northeast' %}
+              text-green-600
+            {% elif r.region == 'South' %}
+              text-red-600
+            {% elif r.region == 'West' %}
+              text-yellow-600
+            {% else %}
+              text-gray-600
+            {% endif %}
+          ">
+            {{ r.region }}
+          </td>
+          <td class="px-6 py-4">{{ r.avg_tmax|round(2) if r.avg_tmax is number else 'N/A' }}</td>
+          <td class="px-6 py-4">{{ r.min_tmax|round(2) if r.min_tmax is number else 'N/A' }}</td>
+          <td class="px-6 py-4">{{ r.max_tmax|round(2) if r.max_tmax is number else 'N/A' }}</td>
+          <td class="px-6 py-4">{{ r.avg_tmin|round(2) if r.avg_tmin is number else 'N/A' }}</td>
+          <td class="px-6 py-4">{{ r.min_tmin|round(2) if r.min_tmin is number else 'N/A' }}</td>
+          <td class="px-6 py-4">{{ r.max_tmin|round(2) if r.max_tmin is number else 'N/A' }}</td>
+          <td class="px-6 py-4">{{ r.avg_prcp|round(2) if r.avg_prcp is number else 'N/A' }}</td>
+          <td class="px-6 py-4">{{ r.min_prcp|round(2) if r.min_prcp is number else 'N/A' }}</td>
+          <td class="px-6 py-4">{{ r.max_prcp|round(2) if r.max_prcp is number else 'N/A' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+{% endblock %}
